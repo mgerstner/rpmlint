@@ -280,7 +280,6 @@ BlockedFilters = [
     "permissions-file-unauthorized",
     "permissions-file-setuid-bit",
     "permissions-file-symlink",
-    "permissions-fscaps",
     "permissions-incorrect",
     "permissions-incorrect-owner",
     "permissions-missing-postin",
