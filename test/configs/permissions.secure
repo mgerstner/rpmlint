@@ -3,5 +3,7 @@
 /var/lib/testsuidpermissionscheck/test_permissions_incorrect_owner abc:root   600
 /var/lib/testsuidpermissionscheck/test_permissions_file_as_dir/  root:root   755
 /var/lib/testsuidpermissionscheck/test_permissions_dir_without_slash  root:root   755
+/test/caps/allowed root:root 0755
+ +capabilities cap_net_raw=ep
 :package: first, second   #  funny comment , :stuff:
 /test/path/one root:root 04755

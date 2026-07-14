@@ -211,6 +211,50 @@ def get_fake_pkg_check():
     return output, test
 
 
+def test_permissions_caps_whitelisted():
+    # a file whose capabilities match the whitelisting profile is accepted
+    output, test = get_fake_pkg_check()
+
+    with FakePermPkg('capstest', '/test/caps/allowed') as pkg:
+        pkg.add_file_with_content('/test/caps/allowed', 'stuff', perms=0o755, filecaps='cap_net_raw=ep')
+        test.check(pkg)
+        assert len(output.results) == 0
+
+
+def test_permissions_caps_whitelisted_flag_order():
+    # the flag ordering ("pe" vs "ep") must not affect the comparison
+    output, test = get_fake_pkg_check()
+
+    with FakePermPkg('capstest', '/test/caps/allowed') as pkg:
+        pkg.add_file_with_content('/test/caps/allowed', 'stuff', perms=0o755, filecaps='cap_net_raw=pe')
+        test.check(pkg)
+        assert len(output.results) == 0
+
+
+def test_permissions_caps_mismatch():
+    # a file with capabilities differing from the whitelisting is complained about
+    output, test = get_fake_pkg_check()
+
+    with FakePermPkg('capstest', '/test/caps/allowed') as pkg:
+        pkg.add_file_with_content('/test/caps/allowed', 'stuff', perms=0o755, filecaps='cap_net_admin=ep')
+        test.check(pkg)
+        out = output.print_results(output.results)
+        assert 'capstest: E: permissions-incorrect /test/caps/allowed has capabilities cap_net_admin=ep but they should be cap_net_raw=ep' in out
+
+
+def test_permissions_caps_multigroup():
+    # capabilities with differing flag sets are rendered by libcap as
+    # whitespace-separated clauses; this must not crash and, since it doesn't
+    # match the (single-group) whitelisting, must be complained about
+    output, test = get_fake_pkg_check()
+
+    with FakePermPkg('capstest', '/test/caps/allowed') as pkg:
+        pkg.add_file_with_content('/test/caps/allowed', 'stuff', perms=0o755, filecaps='cap_chown=i cap_net_raw=ep')
+        test.check(pkg)
+        out = output.print_results(output.results)
+        assert 'capstest: E: permissions-incorrect /test/caps/allowed has capabilities cap_chown=i cap_net_raw=ep but they should be cap_net_raw=ep' in out
+
+
 def test_permissions_package_coupling():
     output, test = get_fake_pkg_check()
 
