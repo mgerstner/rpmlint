@@ -122,37 +122,53 @@ class SUIDPermissionsCheck(AbstractCheck):
     def _is_suid(self, mode):
         return (mode & (stat.S_ISUID | stat.S_ISGID)) != 0
 
+    @staticmethod
+    def _parse_caps(caps):
+        """Normalizes a capability specification into a canonical set of
+        (capability, flags) tuples that can be compared regardless of the
+        input's textual grouping or flag ordering.
+
+        `caps` is either an RPM filecaps string as produced by libcap's
+        cap_to_text() (e.g. "cap_chown=i cap_net_raw=ep") or a permissions
+        profile capability list (e.g. ["cap_net_admin", "cap_net_raw=ep"]).
+
+        Returns None if any clause lacks an explicit "=flags" assignment
+        (shouldn't happen in practice), signalling that a reliable comparison
+        isn't possible and the caller should treat this as a mismatch."""
+        if not isinstance(caps, str):
+            # a profile list only carries the flags on the last capability of a
+            # comma-joined clause; re-join so both inputs share the same format
+            caps = ','.join(caps)
+
+        result = set()
+        # cap_to_text() separates clauses with differing flag sets by spaces,
+        # while capabilities sharing the same flags are joined by commas
+        for clause in caps.split():
+            if '=' not in clause:
+                return None
+            names, flags = clause.split('=', 1)
+            # normalize flag ordering so that e.g. "pe" equals "ep"
+            flags = ''.join(sorted(flags))
+            for name in names.split(','):
+                if name:
+                    result.add((name, flags))
+
+        return frozenset(result)
+
     def _matching_caps(self, pkgfile, entry) -> bool:
         if not pkgfile.filecaps:
             # no capabilities assigned, ignore
             return True
 
-        # inputs are strings of the form "cap_this,cap_that=<perms>"
-        #
-        # compare capabilities by sorting all mentioned capabilities and
-        # extracting the exact permission bits granted for all of them
+        pkg_caps = self._parse_caps(pkgfile.filecaps)
+        entry_caps = self._parse_caps(entry.caps)
 
-        def parse_caps(caps) -> (str, list[str]):
-            retlist = []
-            perm = None
-            for cap in caps:
-                if '=' in cap:
-                    cap, perm = cap.split('=')
-                retlist.append(cap)
-
-            retlist.sort()
-
-            return perm, retlist
-
-        pkg_perm, pkg_caps = parse_caps(pkgfile.filecaps.split(','))
-        entry_perm, entry_caps = parse_caps(entry.caps)
-
-        if not pkg_perm or not entry_perm:
-            # '=ep' or similar permission setting is missing (shouldn't happen
-            # in practice), claim there's a mismatch.
+        if pkg_caps is None or entry_caps is None:
+            # a clause without explicit "=flags" was encountered (shouldn't
+            # happen in practice), claim there's a mismatch to be safe.
             return False
 
-        return pkg_caps == entry_caps and pkg_perm == entry_perm
+        return pkg_caps == entry_caps
 
     def check(self, pkg):
         if pkg.is_source:
