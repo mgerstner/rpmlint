@@ -120,13 +120,17 @@ hash     = "6411eceeeee8714caeb1d0f8967116da51e1ae3838f9593b71ddadcf88c3deb6"
 
 [[FileDigestGroup]]
 package  = "systemd-resolved"
-note     = "systemd-specific resolve API & management API"
+note     = "systemd-specific resolve & management API"
 bug      = "bsc#1261919"
 type     = "varlink"
 [[FileDigestGroup.digests]]
 path     = "/usr/lib/systemd/system/systemd-resolved-varlink.socket"
 digester = "systemd-socket"
 hash     = "924a769f997001348c10369a0af748932058c8f7e88ad5daf1a7e84abda53f77"
+[[FileDigestGroup.digests]]
+path     = "/usr/lib/systemd/system/systemd-resolved-monitor.socket"
+digester = "systemd-socket"
+hash     = "0638b4934f81ba81dc0ec5172cc80a02297abb078cea24273d5b87c2e880b046"
 
 [[FileDigestGroup]]
 package  = "systemd"
@@ -277,3 +281,13 @@ type     = "varlink"
 path     = "/usr/lib/systemd/system/systemd-storage-fs.socket"
 digester = "systemd-socket"
 hash     = "8f6818e0d31544b37d01432d6efd4816f126b12066c41024fa3043bce5116235"
+
+[[FileDigestGroup]]
+package  = "systemd-experimental"
+note     = "systemd networkd metrics read-only access"
+bug      = "bsc#1261919"
+type     = "varlink"
+[[FileDigestGroup.digests]]
+path     = "/usr/lib/systemd/system/systemd-networkd-varlink-metrics.socket"
+digester = "systemd-socket"
+hash     = "d72edad2d2b60779094d1fad79353c330767a9ecd0e7d55f58dd0b686fa380cd"
